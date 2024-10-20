@@ -1,0 +1,20 @@
+Bootstrap: docker
+From: python:3.12-slim
+
+%files
+    ./app /app
+	./requirements.txt /opt/requirements.txt
+	./.env /app/.env
+
+%post -c /bin/bash
+	apt-get update && apt-get upgrade -y
+	python -m pip install -r /opt/requirements.txt
+
+%runscript
+	#!/bin/bash
+	cd /app
+	if [ $# -ne 2 ]; then
+        	echo "Input as arguments the number of rolls, and the output location"
+        	exit 1
+	fi	
+    python -m main -N $1 -u "$2"
