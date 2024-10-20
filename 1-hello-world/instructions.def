@@ -1,0 +1,13 @@
+Bootstrap: docker
+From: python:3.12-slim
+
+%files
+    ./app /app
+
+%post -c /bin/bash
+	apt-get update && apt-get upgrade -y
+
+%runscript
+	#!/bin/bash
+	cd /app
+    python -m main
