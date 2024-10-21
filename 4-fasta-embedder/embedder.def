@@ -1,0 +1,36 @@
+Bootstrap: docker
+From: nvidia/cuda:11.8.0-base-ubuntu22.04
+
+%files
+	./data /opt/data
+	./util /app/util
+	./src/embed.py /app/embed.py
+	./requirements.txt /app/requirements.txt
+	./setup.sh /opt/setup.sh
+	./.env /app/.env
+
+%environment
+	export PATH="/root/miniconda3/bin:$PATH"
+	export TORCH_CUDA_ARCH_LIST="8.6"
+
+%post -c /bin/bash
+	apt-get update
+	apt-get install -y git wget vim pigz build-essential nvidia-utils-555 nvidia-cuda-toolkit
+	mkdir -p /opt/miniconda3
+	wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /opt/miniconda3/miniconda.sh
+	bash /opt/miniconda3/miniconda.sh -b -u -p /opt/miniconda3
+	rm -rf /opt/miniconda3/miniconda.sh
+	/opt/miniconda3/bin/conda init bash
+	echo ". /opt/miniconda3/etc/profile.d/conda.sh" >> $SINGULARITY_ENVIRONMENT
+	source ~/.bashrc
+	/opt/setup.sh
+
+%runscript
+	#!/bin/bash
+	if [ $# -ne 4 ]; then
+		echo "Input as arguments: model name (e.g. facebook/esm2_t6_8M_UR50D), output filename (e.g. esmv2_8M), batch size (e.g. 16)."
+		exit 1
+	fi	
+	cd /app
+	conda run -n embedder python -u -m embed -m "$1" -f "$2" -b $3 -i "$4"
+
